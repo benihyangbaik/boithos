@@ -1,0 +1,9 @@
+tmp
+./research/lib/
+./research/env/*
+bible.prep
+__pycache__
+outsource
+checkpoints
+score.txt
+train-data

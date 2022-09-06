@@ -1,0 +1,3 @@
+sockeye
+unidecode
+subword-nmt
