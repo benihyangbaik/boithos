@@ -1,10 +1,10 @@
 # Boithos
 
-Machine translating the Bible to languages with scarce written/digitized materials.
+Neural machine translating the Bible to languages with scarce written/digitized materials.
 
 ## What does it do?
 
-- Machine translates the Bible
+- Neural machine translates an incomplete Bible
 - Produces grammar documents of the target language
 
 ## Why is this feasible?
