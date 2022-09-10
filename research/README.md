@@ -6,15 +6,12 @@ Contact: [toar@benihyangbaik.com](mailto:toar@benihyangbaik.com)
 
 ## Research Progress
 
-[] Step 1: Recreate the Base Research
-[] Update the codebase
-[] Recreate the base research with 56 Austronesian language translations
-to produce OT translations from scratch on a couple of the
-translations
-[] Instead of producing OT from scratch, produce the rest of NT from
-scratch
-[] Step 2: Use of Non-Bible Materials as the Source
-[] Step 3: Producing Documents of Grammar Rules of the Target
+- [ ] Step 1: Recreate the Base Research
+   - [ ] Update the codebase
+   - [ ] Recreate the base research with 56 Austronesian language translations to produce OT translations from scratch on a couple of the translations
+   - [ ] Instead of producing OT from scratch, produce the rest of NT from scratch
+- [ ] Step 2: Use of Non-Bible Materials as the Source
+- [ ] Step 3: Producing Documents of Grammar Rules of the Target
 
 ## Tools and Resources
 
