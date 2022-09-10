@@ -16,7 +16,7 @@ CLEAN = SCRIPTS + '/training/clean-corpus-n.perl'
 BPE_SCRIPT = 'subword-nmt'
 
 # Tokenization and BPE data compression variables.
-BPE_TOKENS = 30000
+BPE_TOKENS = 45000
 CLEAN_RATIO = 1.5
 
 # Tokenization and BPE temporary results.
@@ -72,7 +72,8 @@ def apply_bpe(fname):
             else:
                 vocab = 'bpe.vocab.src'
             CMD = ([BPE_SCRIPT, 'apply-bpe', '--glossaries'] +
-                   GLOSSARIES + ['-c', BPE_CODE] + ['--vocabulary', vocab,
+                   GLOSSARIES + ['-c', BPE_CODE] + ['--vocabulary', TMP +
+                                                    '/' + vocab,
                                                     '--vocabulary-threshold',
                                                     '50'])
             run(CMD, stdin=inf, stdout=outf, check=True)
