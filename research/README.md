@@ -47,9 +47,9 @@ would be documents explaining the research result.
 
 ### Step 1: Recreate the Base Research
 
-As this is a new field for us, the first step is to recreate the base
-research. It is Sami Liedes' generalization approach on the languages from
-the Austronesian family. Specifically, for the complete Bible:
+As this is a new field for us, the first step is to recreate [Sami Liedes'
+generalization approach](https://samiliedes.wordpress.com/2018/03/07/machine-translating-the-bible-into-new-languages/) on the languages from the Austronesian family.
+Specifically, for the complete Bible:
 
 - Amarasi (Kupang, Indonesia), 2014 [aaz-aaz]
 - Papuan Malay (Papua, Indonesia), 2020 [pmy-PMY]
