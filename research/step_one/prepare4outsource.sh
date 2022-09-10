@@ -18,7 +18,7 @@ cp data/bible.prep/tmp/valid.tgt outsource/valid-data/tgt.txt
 
 # Copy the BPE code and target vocab
 cp data/bible.prep/code outsource/bpe.code
-cp data/bible.prep/tmp/bpe.vocab.tgt  outsource
+cp data/bible.prep/tmp/bpe.vocab.both outsource
 
 # Copy training data
 cp -r train-data outsource

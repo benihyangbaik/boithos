@@ -39,7 +39,8 @@ def load_source_str(data, ref, toascii=False, isall=False, isbyz=False):
     dic = OrderedDict()
     for i, (v, k) in enumerate(zip(data, ref)):
         v = v.strip()
-        k = k.strip()
+        if not k or not v:
+            continue
         for c in RM_CHARS:
             v = v.replace(c, '')
         for r, t in REPL_CHARS.items():
