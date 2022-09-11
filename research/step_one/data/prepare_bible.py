@@ -1,24 +1,14 @@
 # TODO: Deal with verse ranges.
-# TODO: Use tuple instead of list and NamedTuple instead of dict for ensuring
-# the correct tracing, as suggested here:
-# [INFO:sockeye.checkpoint_decoder] Created CheckpointDecoder(max_input_len=-1, beam_size=5, num_sentences=500)
-# /home/user/Desktop/Repositories/proyek/benihyangbaik/boithos/research/env/step_one/lib64/python3.10/site-packages/torch/jit/_trace.py:958:
-# TracerWarning: Encountering a list at the output of the tracer might cause
-# the trace to be incorrect, this is only valid if the container structure does
-# not change based on the module's inputs. Consider using a constant container
-# instead (e.g. for `list`, use a `tuple` instead. for `dict`, use a
-# `NamedTuple` instead). If you absolutely need this and know the side effects,
-# pass strict=False to trace() to allow this behavior.
+# TODO: Consistency in variable and function names, such as sources, is it
+# "source" or "module"?
 
-from unidecode import unidecode
-from collections import OrderedDict
 from subprocess import run
 from threading import Thread
 import os
 import shutil
 import sys
 
-import prepare_corpora
+import prepare_corpora as pc
 
 # Tokenization and BPE data compression scripts.
 SCRIPTS = '../../lib/mosesdecoder/scripts'
@@ -51,12 +41,12 @@ SOURCES = [
 ]
 
 TRAIN_DATAS = {
-    'bjnbjn': 'RUT', # Banjar, Malaysia
-    'indindags': 'MAT', # Indonesia
-    'jvnjvnNT': 'ROM', # Carribean Java
-    # 'kjekjeNT': '1JN', # Kisar Island, Maluku Barat Daya
-    # 'lexlex': '1PE', # Leti and Babar Islands, Maluku
-    'uryury': '2TH', # Orya, Papua
+    'bjnbjn': 'RUT',  # Banjar, Malaysia
+    'indindags': 'MAT',  # Indonesia
+    'jvnjvnNT': 'ROM',  # Carribean Java
+    # 'kjekjeNT': '1JN',  # Kisar Island, Maluku Barat Daya
+    # 'lexlex': '1PE',  # Leti and Babar Islands, Maluku
+    'uryury': '2TH',  # Orya, Papua
 }
 
 TRANS_RAW = [
@@ -69,9 +59,10 @@ SRC_TOKEN_EXTRA_WEIGHT = 2
 TARGET_EXTRA_PASSES = 2
 TARGETS = list(TRAIN_DATAS)
 
-SRC='grcgrcbrenttisch'
+SRC = 'grcgrcbrenttisch'
 
 GLOSSARIES = ['TGT_' + m.lstrip('*') for m in SOURCES] + ['TGT_TEMPLATE']
+
 
 def apply_bpe(fname):
     with open(TMP + '/' + fname) as inf:
@@ -84,10 +75,11 @@ def apply_bpe(fname):
             run(CMD, stdin=inf, stdout=outf, check=True)
 
 
-def main():
+def initial_checks():
     srcnames = [x.lstrip('*') for x in SOURCES]
     assert SRC in srcnames
-    assert not (set(TRAIN_DATAS) - set(srcnames)), (set(TRAIN_DATAS) - set(srcnames))
+    assert not (set(TRAIN_DATAS) - set(srcnames)), (set(TRAIN_DATAS) -
+                                                    set(srcnames))
     assert not (set(TARGETS) - set(srcnames)), (set(TARGETS) - set(srcnames))
 
     shutil.rmtree(PREP, ignore_errors=True)
@@ -96,39 +88,39 @@ def main():
 
     # Check if tokenizer dependency exists.
     if not os.path.exists('../../lib/mosesdecoder'):
-        print('ERROR: Directory "mosesdecoder" does not exist.', file=sys.stderr)
-        print('Did you forget to run install_dependencies.sh?', file=sys.stderr)
+        print('ERROR: Directory "mosesdecoder" does not exist.',
+              file=sys.stderr)
+        print('Did you forget to run install_dependencies.sh?',
+              file=sys.stderr)
         sys.exit(1)
 
     # Check if corpus exists.
-    if not os.path.exists('../../corpus/grcgrcbrenttisch.txt'):
-        print('ERROR: Corpora "grcgrcbrenttisch.txt" does not exist.', file=sys.stderr)
-        print('Did you forget to run install_dependencies.sh?', file=sys.stderr)
+    if not os.path.exists('../../corpus'):
+        print('ERROR: Directory "corpus" does not exist.', file=sys.stderr)
+        print('Did you forget to run install_dependencies.sh?',
+              file=sys.stderr)
         sys.exit(1)
 
-    # Load sources to train_mods and valid_mods object.
+
+def load_sources():
+    print('Loading sources...')
     train_mods = {}
     valid_mods = {}
-    print('Loading sources...')
     for s in SOURCES:
         print(s, end=' ', flush=True)
         decode = False
         if s[0] == '*':
             decode = True
             s = s[1:]
-        train_mod = prepare_corpora.load_source_file(s, toascii=decode)
-        # print(train_mod)
+        train_mod = pc.load_source_file(s, toascii=decode)
         if s in TRAIN_DATAS:
-            valid_mod, train_mod = prepare_corpora.split_at_key(TRAIN_DATAS[s], train_mod)
-            # print("valid mod")
-            # print(valid_mod)
+            valid_mod, train_mod = pc.split_at_key(TRAIN_DATAS[s], train_mod)
             valid_mods[s] = valid_mod
         train_mods[s] = train_mod
-    print()
+    return train_mods, valid_mods
 
-    src_mod = train_mods[SRC]
-    del train_mods[SRC]
 
+def generate_training_data(src_mod, train_mods):
     print("Generating training data...")
     src_data = []
     tgt_data = []
@@ -137,17 +129,39 @@ def main():
         if tgt_mod in TARGETS:
             passes += TARGET_EXTRA_PASSES
         for i in range(passes):
-            for src_line, tgt_line in prepare_corpora.gen_trans(src_mod, train_mods[tgt_mod]):
+            for src_line, tgt_line in pc.gen_trans(src_mod,
+                                                   train_mods[tgt_mod]):
                 src_data.append('TGT_' + tgt_mod + ' ' + src_line)
                 tgt_data.append(tgt_line)
+    return src_data, tgt_data
 
+
+def generate_validation_data(src_mod, valid_mods):
     print("Generating validation data...")
     valid_src_data = []
     valid_tgt_data = []
     for tgt_mod in valid_mods:
-        for src_line, tgt_line in prepare_corpora.gen_trans(src_mod, valid_mods[tgt_mod]):
+        for src_line, tgt_line in pc.gen_trans(src_mod, valid_mods[tgt_mod]):
             valid_src_data.append('TGT_' + tgt_mod + ' ' + src_line)
             valid_tgt_data.append(tgt_line)
+    return valid_src_data, valid_tgt_data
+
+
+def main():
+    initial_checks()
+
+    # Load sources.
+    train_mods, valid_mods = load_sources()
+    print()
+
+    # Delete the attention language from the training sources.
+    src_mod = train_mods[SRC]
+    del train_mods[SRC]
+
+    # Generate training and validation data.
+    src_data, tgt_data = generate_training_data(src_mod, train_mods)
+    valid_src_data, valid_tgt_data = generate_validation_data(src_mod,
+                                                              valid_mods)
 
     print('Preprocessing training data...')
     # TODO: Find out what is this for other than target code name removal.
@@ -159,7 +173,7 @@ def main():
         for i in range(1+SRC_TOKEN_EXTRA_WEIGHT):
             print('\n'.join(src_mod.values()), file=f)
 
-    # Also create a file for the source exactly once - it's useful down the road
+    # Create a file for the source exactly once.
     src_template = ['TGT_TEMPLATE ' + x for x in src_mod.values()]
 
     # Tokenize the data.
@@ -170,12 +184,13 @@ def main():
         CMD = ['perl', TOKENIZER, '-time', '-q', '-threads', '8', '-protected',
                TMP+'/protect', '-l', 'nosuchlanguage']
         with open(TMP + '/' + fname, 'w') as f:
-            run(CMD, input='\n'.join(data), stdout=f, check=True, encoding='utf-8')
+            run(CMD, input='\n'.join(data), stdout=f, check=True,
+                encoding='utf-8')
 
     # Clean the tokenized data?
     for s, d in [('train', 'train.clean'), ('valid', 'valid.clean')]:
-        CMD = ['perl', CLEAN, '-ratio', str(CLEAN_RATIO), TMP+'/'+s, 'src', 'tgt',
-               TMP + '/' + d, '1', '175']
+        CMD = ['perl', CLEAN, '-ratio', str(CLEAN_RATIO), TMP+'/'+s, 'src',
+               'tgt', TMP + '/' + d, '1', '175']
         run(CMD, check=True)
 
     run('cat {tmp}/src-once {tmp}/train.tgt >{tmp}/train.both'.format(tmp=TMP),
@@ -189,9 +204,9 @@ def main():
 
     print('Applying BPE to:')
     threads = []
-    for l in ('src', 'tgt'):
+    for line in ('src', 'tgt'):
         for s in ('train', 'valid'):
-            fname = s + '.' + l
+            fname = s + '.' + line
             print('- ' + fname)
             th = Thread(target=apply_bpe, args=[fname])
             th.start()
@@ -206,6 +221,17 @@ def main():
 
     for t in threads:
         t.join()
+
+    print('Preparing source templates for each target language...')
+    for trans in TRANS_RAW:
+        fname = PREP + '/src.' + trans + '.txt'
+        shutil.copy(PREP + '/src-template', fname)
+        new_lines = []
+        with open(fname) as f:
+            for line in f.readlines():
+                new_lines.append(line.strip().replace("TEMPLATE", trans))
+        with open(fname, 'w') as f:
+            f.write('\n'.join(new_lines))
 
     # FIXME proper test set
     shutil.copy(PREP + '/valid.src', PREP + '/test.src')

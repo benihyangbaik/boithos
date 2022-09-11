@@ -8,3 +8,13 @@ python -m sockeye.train \
   --output checkpoints/boithos \
   --shared-vocab \
   --max-num-epochs 3
+
+python -m sockeye.translate \
+    -m checkpoints/boithos \
+    --beam-size 120 \
+    --input data/src.indindags.txt \
+    --output data/res.indindags.txt
+
+cp data/res.indindags.txt data/res.indindags.clean.txt
+
+sed -i -r 's/@@( |$)//g' data/res.indindags.clean.txt

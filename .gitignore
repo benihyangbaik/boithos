@@ -5,6 +5,7 @@ research/corpus/
 bible.prep
 __pycache__
 outsource
+*.zip
 checkpoints
 score.txt
 train-data

@@ -24,7 +24,7 @@ cp data/bible.prep/tmp/bpe.vocab.both outsource
 cp -r train-data outsource
 
 # Copy translation template
-cp data/bible.prep/src-template outsource/trans-raw
+cp data/bible.prep/src* outsource/trans-raw
 
-# Copy the Jupyter Notebook script
-cp step_one.ipynb outsource
+# Archive smaller uploads
+zip -9 -r o.zip outsource

@@ -1,9 +1,6 @@
-import sys
-import re
 from unidecode import unidecode
 from collections import OrderedDict
 
-import subprocess
 
 OT_OSIS_ABBREVIATION = [
     'Gen', 'Exod', 'Lev', 'Nuv', 'Deut', 'Josh', 'Judg', 'Ruth', '1Sam',
@@ -24,6 +21,7 @@ PATH_TO_SOURCE = '../../corpus/'
 REF_FILE = PATH_TO_SOURCE + 'modvref.txt'
 
 RM_CHARS = ['¶']
+# FIXME: Some/on of these are unidecoded as &quot;
 REPL_CHARS = {
     '»': '"',
     '«': '"',
@@ -32,6 +30,7 @@ REPL_CHARS = {
     '”': '"',
     '’': "'"
 }
+
 
 def load_source_str(data, ref, toascii=False, isall=False, isbyz=False):
     data = data.split('\n')
@@ -45,6 +44,7 @@ def load_source_str(data, ref, toascii=False, isall=False, isbyz=False):
             v = v.replace(c, '')
         for r, t in REPL_CHARS.items():
             v = v.replace(r, t)
+        v = v.lower()
         if toascii:
             v = unidecode(v)
         dic[k] = v
@@ -75,24 +75,3 @@ def split_at_key(split_key, od):
             tgt = hi
         tgt[k] = v
     return lo, hi
-
-
-def main():
-    TAG = sys.argv[1].upper()
-    SRC_OSIS = sys.argv[2]
-    TGT_OSIS = sys.argv[3]
-    OUT_SRC = sys.argv[4]
-    OUT_TGT = sys.argv[5]
-
-    src = load_osis_file(SRC_OSIS, toascii=True)
-    tgt = load_osis_file(TGT_OSIS)
-
-    with open(OUT_SRC, 'w') as out_src:
-        with open(OUT_TGT, 'w') as out_tgt:
-            for srcv, tgtv in gen_trans(src, tgt):
-                print('TGT_'+TAG + ' ' + srcv, file=out_src)
-                print(tgtv, file=out_tgt)
-
-
-if __name__ == '__main__':
-    main()
