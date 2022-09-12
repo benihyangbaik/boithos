@@ -1,6 +1,4 @@
 # TODO: Deal with verse ranges.
-# TODO: Consistency in variable and function names, such as sources, is it
-# "source" or "module"?
 
 from subprocess import run
 from threading import Thread
@@ -26,7 +24,7 @@ TMP = PREP + '/tmp'
 BPE_CODE = PREP + '/code'
 
 # starts with * = unidecode
-SOURCES = [
+CORPUS = [
     "*grcgrcbrenttisch", "indindags", "aazaaz", "pmyPMY",
     "tgltglulb", "*tonton", "iloiloulb", "ifkifk", "ifaifa",
     "ifbifb", "hlthltmcsb", "hlthltthb", "alpalpNT", "amkamk",
@@ -61,7 +59,7 @@ TARGETS = list(TRAIN_DATAS)
 
 SRC = 'grcgrcbrenttisch'
 
-GLOSSARIES = ['TGT_' + m.lstrip('*') for m in SOURCES] + ['TGT_TEMPLATE']
+GLOSSARIES = ['TGT_' + m.lstrip('*') for m in CORPUS] + ['TGT_TEMPLATE']
 
 
 def apply_bpe(fname):
@@ -76,7 +74,7 @@ def apply_bpe(fname):
 
 
 def initial_checks():
-    srcnames = [x.lstrip('*') for x in SOURCES]
+    srcnames = [x.lstrip('*') for x in CORPUS]
     assert SRC in srcnames
     assert not (set(TRAIN_DATAS) - set(srcnames)), (set(TRAIN_DATAS) -
                                                     set(srcnames))
@@ -104,45 +102,50 @@ def initial_checks():
 
 def load_sources():
     print('Loading sources...')
-    train_mods = {}
-    valid_mods = {}
-    for s in SOURCES:
+    train_corpus = {}
+    valid_corpus = {}
+    for s in CORPUS:
         print(s, end=' ', flush=True)
         decode = False
         if s[0] == '*':
             decode = True
             s = s[1:]
-        train_mod = pc.load_source_file(s, toascii=decode)
+        train_corpora = pc.load_source_file(s, toascii=decode)
         if s in TRAIN_DATAS:
-            valid_mod, train_mod = pc.split_at_key(TRAIN_DATAS[s], train_mod)
-            valid_mods[s] = valid_mod
-        train_mods[s] = train_mod
-    return train_mods, valid_mods
+            valid_corpora, train_corpora = pc.split_at_key(TRAIN_DATAS[s],
+                                                           train_corpora)
+            valid_corpus[s] = valid_corpora
+        train_corpus[s] = train_corpora
+    return train_corpus, valid_corpus
 
 
-def generate_training_data(src_mod, train_mods):
+# TODO: Sockeye has a way to add prefixes, might it be better than adding it
+#       manually? Try this after finding out if we proceed with Sockeye or no
+#       on step two on the research.
+def generate_training_data(src_corpora, train_corpus):
     print("Generating training data...")
     src_data = []
     tgt_data = []
-    for tgt_mod in train_mods:
+    for tgt_corpora in train_corpus:
         passes = 1
-        if tgt_mod in TARGETS:
+        if tgt_corpora in TARGETS:
             passes += TARGET_EXTRA_PASSES
         for i in range(passes):
-            for src_line, tgt_line in pc.gen_trans(src_mod,
-                                                   train_mods[tgt_mod]):
-                src_data.append('TGT_' + tgt_mod + ' ' + src_line)
+            for src_line, tgt_line in pc.gen_trans(src_corpora,
+                                                   train_corpus[tgt_corpora]):
+                src_data.append('TGT_' + tgt_corpora + ' ' + src_line)
                 tgt_data.append(tgt_line)
     return src_data, tgt_data
 
 
-def generate_validation_data(src_mod, valid_mods):
+def generate_validation_data(src_corpora, valid_corpus):
     print("Generating validation data...")
     valid_src_data = []
     valid_tgt_data = []
-    for tgt_mod in valid_mods:
-        for src_line, tgt_line in pc.gen_trans(src_mod, valid_mods[tgt_mod]):
-            valid_src_data.append('TGT_' + tgt_mod + ' ' + src_line)
+    for tgt_corpora in valid_corpus:
+        for src_line, tgt_line in pc.gen_trans(src_corpora,
+                                               valid_corpus[tgt_corpora]):
+            valid_src_data.append('TGT_' + tgt_corpora + ' ' + src_line)
             valid_tgt_data.append(tgt_line)
     return valid_src_data, valid_tgt_data
 
@@ -151,17 +154,17 @@ def main():
     initial_checks()
 
     # Load sources.
-    train_mods, valid_mods = load_sources()
+    train_corpus, valid_corpus = load_sources()
     print()
 
     # Delete the attention language from the training sources.
-    src_mod = train_mods[SRC]
-    del train_mods[SRC]
+    src_corpora = train_corpus[SRC]
+    del train_corpus[SRC]
 
     # Generate training and validation data.
-    src_data, tgt_data = generate_training_data(src_mod, train_mods)
-    valid_src_data, valid_tgt_data = generate_validation_data(src_mod,
-                                                              valid_mods)
+    src_data, tgt_data = generate_training_data(src_corpora, train_corpus)
+    valid_src_data, valid_tgt_data = generate_validation_data(src_corpora,
+                                                              valid_corpus)
 
     print('Preprocessing training data...')
     # TODO: Find out what is this for other than target code name removal.
@@ -171,10 +174,10 @@ def main():
     # For BPE, learn source language only 1+SRC_TOKEN_EXTRA_WEIGHT times.
     with open(TMP + '/src-once', 'w') as f:
         for i in range(1+SRC_TOKEN_EXTRA_WEIGHT):
-            print('\n'.join(src_mod.values()), file=f)
+            print('\n'.join(src_corpora.values()), file=f)
 
     # Create a file for the source exactly once.
-    src_template = ['TGT_TEMPLATE ' + x for x in src_mod.values()]
+    src_template = ['TGT_TEMPLATE ' + x for x in src_corpora.values()]
 
     # Tokenize the data.
     for data, fname in [(src_data, 'train.src'), (tgt_data, 'train.tgt'),

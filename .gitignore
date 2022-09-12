@@ -2,6 +2,8 @@ tmp
 research/lib/
 research/env/*
 research/corpus/
+research/corpus-ex/*
+!research/corpus-ex/README.md
 bible.prep
 __pycache__
 outsource

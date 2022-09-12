@@ -27,4 +27,4 @@ cp -r train-data outsource
 cp data/bible.prep/src* outsource/trans-raw
 
 # Archive smaller uploads
-zip -9 -r o.zip outsource
+zip -9 -r o.zip outsource/*
