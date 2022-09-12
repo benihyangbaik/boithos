@@ -150,23 +150,9 @@ def generate_validation_data(src_corpora, valid_corpus):
     return valid_src_data, valid_tgt_data
 
 
-def main():
-    initial_checks()
-
-    # Load sources.
-    train_corpus, valid_corpus = load_sources()
-    print()
-
-    # Delete the attention language from the training sources.
-    src_corpora = train_corpus[SRC]
-    del train_corpus[SRC]
-
-    # Generate training and validation data.
-    src_data, tgt_data = generate_training_data(src_corpora, train_corpus)
-    valid_src_data, valid_tgt_data = generate_validation_data(src_corpora,
-                                                              valid_corpus)
-
-    print('Preprocessing training data...')
+def tokenize_data(src_data, tgt_data, valid_src_data, valid_tgt_data,
+                  src_corpora):
+    print('Tokenizing training data...')
     # TODO: Find out what is this for other than target code name removal.
     with open(TMP + '/protect', 'w') as f:
         print('TGT_[a-zA-Z0-9]+', file=f)
@@ -199,6 +185,10 @@ def main():
     run('cat {tmp}/src-once {tmp}/train.tgt >{tmp}/train.both'.format(tmp=TMP),
         shell=True, check=True)
 
+
+# Learn BPE and vocabulary from the training data and apply BPE
+# to the training data, validation data, and untranslated data.
+def learn_and_apply_bpe():
     print('Learning BPE and vocabulary...')
     CMD = [BPE_SCRIPT, 'learn-joint-bpe-and-vocab', '-i', TMP +
            '/train.both', '-s', str(BPE_TOKENS), '-o', BPE_CODE,
@@ -225,6 +215,26 @@ def main():
     for t in threads:
         t.join()
 
+
+def main():
+    initial_checks()
+
+    train_corpus, valid_corpus = load_sources()
+    print()
+
+    src_corpora = train_corpus[SRC]
+    del train_corpus[SRC]
+
+    src_data, tgt_data = generate_training_data(src_corpora, train_corpus)
+    valid_src_data, valid_tgt_data = generate_validation_data(src_corpora,
+                                                              valid_corpus)
+    tokenize_data(src_data, tgt_data, valid_src_data, valid_tgt_data,
+                  src_corpora)
+
+    learn_and_apply_bpe()
+
+    # TODO: Remove the lines already translated in the target
+    #       language.
     print('Preparing source templates for each target language...')
     for trans in TRANS_RAW:
         fname = PREP + '/src.' + trans + '.txt'
