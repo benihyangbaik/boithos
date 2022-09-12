@@ -1,7 +1,7 @@
-# Boithos
+# βοηθός (Boithos, helper)
 
-(The software doesn't exist yet, early research is in progress and frequent
-update can be seen in `./research`.)
+(_The software doesn't exist yet, early research is in progress and frequent
+update can be seen in `./research`._)
 
 Software for neural machine translating the Bible to languages with scarce
 written/digitized materials.
